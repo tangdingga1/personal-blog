@@ -1,6 +1,6 @@
 # 说明
 
-这里是(个人博客)[https://www.tangdingblog.cn/blog/]。用于博客的交流勘误等工作。
+这里是[个人博客](https://www.tangdingblog.cn/blog/)。用于博客的交流勘误等工作。
 
 # 勘误
 - 你可以用[issues](https://github.com/tangdingga1/personal-blog/issues)的方式来进行博客的勘误。提时请带上文章的标题。
