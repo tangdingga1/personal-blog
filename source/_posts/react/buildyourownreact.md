@@ -8,8 +8,9 @@ tags:
 - 转载
 - 自翻
 ---
-&emsp;&emsp;转载自翻自Rodrigo Pombo的博文[Build your own React](https://pomb.us/build-your-own-react/)。
+&emsp;&emsp;转载自翻自[Rodrigo Pombo](https://twitter.com/pomber)的博文[Build your own React](https://pomb.us/build-your-own-react/)。翻译有纰漏和不足之处请多多指教。
 <!--more-->
+&emsp;&emsp;你可以在[这里](https://www.tangdingblog.cn/blog/react/buildyourownreact-2020-09-22/)阅读原文，在[这里](https://github.com/tangdingga1/personal-blog/issues)提交勘误。本文已获得原作者翻译转载授权。如果需要转载翻译请联系原作者或者本人。
 
 &emsp;&emsp;我们将一步一步重建一个属于我们自己的react。我们的react架构将和真实的react架构相同，但是去掉了大部分的优化和一些目前不必要的功能。
 
