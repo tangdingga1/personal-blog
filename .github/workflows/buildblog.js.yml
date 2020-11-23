@@ -1,0 +1,21 @@
+# This workflow will do a clean install of node dependencies, build the source code and run tests across different versions of node
+# For more information see: https://help.github.com/actions/language-and-framework-guides/using-nodejs-with-github-actions
+
+name: build-blog CI
+
+on:
+  push:
+    branches: [ master ]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [14x]
+
+    steps:
+      - run: sshpass -p ${{secrets.SECRET}} ssh -o StrictHostKeyChecking=no ${{secrets.NAME_USER}} 'cd ${{secrets.PATH}} && git pull && npm run build'
+     
