@@ -17,7 +17,7 @@ const font_providers = {
 };
 
 const icon_providers = {
-    fontawesome: 'https://use.fontawesome.com/releases/v5.4.1/css/all.css'
+    fontawesome: 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.2/css/all.min.css'
 };
 
 module.exports = function (hexo) {
