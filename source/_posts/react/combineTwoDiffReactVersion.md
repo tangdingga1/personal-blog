@@ -128,11 +128,11 @@ render(<App />, element);
 
 
 function App() {
-  return React.crateElement(Editor, null);
+  return React.createElement(Editor, null);
 }
 
 render(
-  React.crateElement(App, null)
+  React.createElement(App, null)
   ,
   element
 );
