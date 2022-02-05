@@ -1,5 +1,5 @@
 ---
-title: zx库与应用
+title: 深入浅出zx库
 date: 2022/02/2 19:00:00
 categories:
 - [前端, node]
@@ -221,3 +221,157 @@ const localBranchNames =
 ```
 
 &emsp;&emsp;最后使用 `zx` 执行文件，就可以敲击下回车清空所有的本地分支了。
+
+## 深入一下
+&emsp;&emsp;`zx` 的源码非常的少，两个代码相关的文件加起来总才共五百多行，这还包括了 `markdown` 和 `xml` 的解析功能。如果去掉诸如**执行命令解析**，**错误匹配**以及一些**格式化输入**的代码，整个 `bash` 核心功能相关的代码才100行左右。
+
+&emsp;&emsp;`zx` 的 `bash` 相关的功能本质上是在 node 的 [child_process](http://nodejs.cn/api/child_process.html#child-process) 模块上一个封装。正如库本身声明的那样， 它是一个为了更好编写脚本的工具（`A tool for writing better scripts`）。因此深入源码前，可以带上这三个有趣的问题：
+1. 为什么 `zx` 要使用 <code>\`\`</code> 的方式去执行`$`函数。
+2. <code>$\`command\`</code>是如何解析 command，处理引号的问题的。
+3. 为什么一个核心功能仅为包装了一下 node 功能的库，能够成为2021年最受欢迎的前端库。
+
+&emsp;&emsp;`zx` 库 代码文件有 `zx.mjs` 和 `index.mjs`。其中 `zx.mjs` 是用来解析用 `zx` 执行命令行文件的。这个文件的代码可以跳过，只看 `index.mjs` 功能的部分。以下为了文章内容的连贯性和阅读的方便性，会省略部分不重要的解析处理代码，具体代码以源码为准。
+
+我们首先来看核心的`$`函数是怎么出入输入的 `command` 的：
+
+```javascript
+function $(pieces, ...args) {
+  let cmd = pieces[0], i = 0
+  while (i < args.length) {
+    let s
+    // 转换数组类型的入参
+    if (Array.isArray(args[i])) {
+      s = args[i].map(x => $.quote(substitute(x))).join(' ')
+    } else {
+      s = $.quote(substitute(args[i]))
+    }
+    cmd += s + pieces[++i]
+  }
+}
+```
+
+&emsp;&emsp;先来回顾一下`$`函数的使用方法，<code>$\`command\`</code>。这里使用的是[带标签的模板字符串](https://developer.mozilla.org/zh-CN/docs/Web/JavaScript/Reference/Template_literals#%E5%B8%A6%E6%A0%87%E7%AD%BE%E7%9A%84%E6%A8%A1%E6%9D%BF%E5%AD%97%E7%AC%A6%E4%B8%B2)语法。这种方式可以快速的提取在<code>\`\`</code>中插入的变量，也这样就能方便的实现前文提到过的**自动转换数组**和**自动加上引号**的功能。
+
+接下来看下解析转换的 `substitute` 和 `$.quote` 函数。
+```javascript
+function substitute(arg) {
+  if (arg instanceof ProcessOutput) {
+    return arg.stdout.replace(/\n$/, '')
+  }
+  return `${arg}`
+}
+```
+
+&emsp;&emsp;函数 substitute 很简单，就是如果输入变量为一个 `ProcessOutput` 类，会解析成类的 `stdout` 输出返回。
+
+```javascript
+function quote(arg) {
+  if (/^[a-z0-9/_.-]+$/i.test(arg) || arg === '') {
+    return arg
+  }
+  // 如果其中包含空格会走这里
+  return `$'`
+    + arg
+      .replace(/\\/g, '\\\\')
+      .replace(/'/g, '\\\'')
+      .replace(/\f/g, '\\f')
+      .replace(/\n/g, '\\n')
+      .replace(/\r/g, '\\r')
+      .replace(/\t/g, '\\t')
+      .replace(/\v/g, '\\v')
+      .replace(/\0/g, '\\0')
+    + `'`
+}
+```
+&emsp;&emsp;`quote` 部分也很简单，如果输入变量仅包含 `/^[a-z0-9/_.-]+$/i` 或者为 `空字符串`，就直接返回。如果有其它内容，则会加上 <code>$''</code>，把这个输入作为一个字符串返回。这也就是前文提到的过的现象的原因：
+
+```javascript
+let name = '测试 测试';
+await $`mkdir ${name}`;
+// 输出：$ mkdir $'测试 测试' 成功
+
+let demo = 'git log';
+await $`${demo}`;
+// 报错
+```
+
+&emsp;&emsp;这么设计的原因在我和库提的一个[issue](https://github.com/google/zx/issues/284)中有讨论过原因，主音是为了安全（`Main idea for $ to be safe`）。至此，三个问题中的两个已经解决了，我们接下来看完`$`函数中的剩余内容。
+
+```javascript
+let resolve, reject
+let promise = new ProcessPromise((...args) => [resolve, reject] = args)
+promise._run = () => { /* 暂时省略中间内容 */ }
+setTimeout(promise._run, 0) // 确保所有的协程已经开始
+return promise
+```
+
+&emsp;&emsp;剩下的就是生成了一个 `ProcessPromise` 类的实例，取出其中的 `resolve, reject` ，声明了一个`_run` 函数，然后把实例返回了。总的`$`函数的逻辑就是这么简单。我们来过一下 `ProcessPromise` 类。
+
+```javascript
+class ProcessPromise extends Promise {
+  get stdin() {
+    this._run()
+    return this.child.stdin
+  }
+
+  get stdout() {
+    this._run()
+    return this.child.stdout
+  }
+
+  get stderr() {
+    this._run()
+    return this.child.stderr
+  }
+
+  get exitCode() {
+    return this
+      .then(p => p.exitCode)
+      .catch(p => p.exitCode)
+  }
+
+  then(onfulfilled, onrejected) {
+    if (this._run) this._run()
+    return super.then(onfulfilled, onrejected)
+  }
+
+  pipe() {}
+
+  kill() {}
+}
+```
+
+&emsp;&emsp;类 `ProcessPromise` 继承了 `Promise`，重写了它的 then 方法，去执行 _run。然后声明了文档提供的属性和方法。本质上就是一个取值需要的工具类。现在我们回到 `_run` 函数。
+
+```javascript
+import {spawn} from 'child_process'
+
+let child = spawn(prefix + cmd, {
+  cwd: process.cwd(),
+  shell: typeof shell === 'string' ? shell : true,
+  stdio: [promise._inheritStdin ? 'inherit' : 'pipe', 'pipe', 'pipe'],
+  windowsHide: true,
+})
+
+child.on('exit', code => {
+  child.on('close', () => {
+    /* 省略错误处理 */
+  })
+})
+
+let onStderr = data => {
+  if (verbose) process.stderr.write(data)
+  stderr += data
+  combined += data
+}
+child.stderr.on('data', onStderr)
+```
+
+&emsp;&emsp;可以看到 `_run` 函数中核心的功能就在这里。每次使用`$`函数去执行一个 `bash` 本质上是使用 `spawn` 分出去一个以当前主线程路径的子线程。去监听它的**日志**、**错误**和**退出**。
+
+## 写在最后
+&emsp;&emsp;文章的最后，来聊聊前文提出的三个问题中的最后一个问题。我写代码到现在为止一直在思考一件事情，想要做一个成功的程序员，到哪一点才是最重要的。我一直有一个观点，程序中蕴含的哲学思想，是远远要比现在大多数程序员在努力追求的诸如**算法**，**底层**，**炫酷的代码**是要重要的多的。
+
+&emsp;&emsp;比如**操作系统**是一个伟大的创作，但是如果学习和明白了**操作系统**中核心的设计理念，用任何语言，一般水平的程序员也能写出简易的操作系统中的核心功能。但是**操作系统**中，**线程池**，**文件**，**任务调度**这些高度抽象的哲学设计和它们成功解决的问题，这应该才是**操作系统**最伟大的地方。
+
+&emsp;&emsp;就像 `zx` 库一样，它的核心功能代码几乎不到100行，而且基本上是对 node 功能的一个封装，但是却能成为2021最受欢迎的前端库，不正是因为它巧妙的设计和解决的问题吗。
