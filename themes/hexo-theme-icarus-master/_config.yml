@@ -195,7 +195,7 @@ plugins:
     gallery: true
     # Enable the Outdated Browser plugin
     # http://outdatedbrowser.com/
-    outdated-browser: true
+    outdated-browser: false
     # Enable the MathJax plugin
     # https://ppoffice.github.io/hexo-theme-icarus/Plugins/General/mathjax-plugin/
     mathjax: true
