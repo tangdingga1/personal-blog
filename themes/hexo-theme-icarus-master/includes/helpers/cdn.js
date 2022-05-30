@@ -8,7 +8,7 @@
  */
 const cdn_providers = {
     cdnjs: 'https://cdnjs.cloudflare.com/ajax/libs/${ package }/${ version }/${ filename }',
-    jsdelivr: 'https://cdn.jsdelivr.net/npm/${ package }@${ version }/${ filename }',
+    jsdelivr: 'https://lib.baomitu.com/${ package }${ version }/${ filename }',
     unpkg: 'https://unpkg.com/${ package }@${ version }/${ filename }'
 };
 
