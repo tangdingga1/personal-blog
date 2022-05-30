@@ -1,9 +1,9 @@
 <% if (plugin !== false) { %>
     <% if (head) { %>
-    <%- _css(cdn('lightgallery-js', '1.6.8', 'css/lightgallery.min.css')) %>
+    <%- _css(cdn('lightgallery', '1.6.8', 'css/lightgallery.min.css')) %>
     <%- _css(cdn('justifiedGallery', '3.7.0', 'css/justifiedGallery.min.css')) %>
     <% } else { %>
-    <%- _js(cdn('lightgallery-js', '1.6.8', 'js/lightgallery.min.js'), true) %>
+    <%- _js(cdn('lightgallery', '1.6.8', 'js/lightgallery.min.js'), true) %>
     <%- _js(cdn('justifiedGallery', '3.7.0', 'js/jquery.justifiedGallery.min.js'), true) %>
     <%- _js('js/gallery', true) %>
     <% } %>
