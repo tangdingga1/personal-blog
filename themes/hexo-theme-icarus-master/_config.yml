@@ -50,7 +50,7 @@ footer:
 article:
     # Code highlight theme
     # https://github.com/highlightjs/highlight.js/tree/master/src/styles
-    highlight: darcula
+    highlight: foundation
     # Whether to show article thumbnail images
     thumbnail: false
     # Whether to show estimate article reading time
